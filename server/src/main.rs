@@ -1,20 +1,19 @@
-use actix_web::{get, web, Responder, HttpServer, App};
+use actix_web::{get, web, Responder, HttpResponse, HttpServer, App};
 use map::Map;
 
 mod map;
-
+mod noise;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let map = web::Data::new(Map::new());  
 
-
+    println!("Listening on port: 8080");
 
     HttpServer::new(move || {
         App::new()
         .app_data(map.clone())
         .service(pushed)
-        .service(increment)
     })
     .bind("127.0.0.1:8080")?
     .run()
@@ -24,14 +23,9 @@ async fn main() -> std::io::Result<()> {
 
 #[get("/")]
 async fn pushed(map: web::Data<Map>) -> impl Responder {
-    map.push(1).await;
-    println!("{:?}", map.map().await);
-    format!("pushed")
+    let map = map.map().await;
+    println!("{:?}", map);
+    HttpResponse::Ok().json(map)
 }
 
-#[get("/inc")]
-async fn increment(map: web::Data<Map>) -> impl Responder {
-    map.inc().await;
-    format!("increment")
-}
 
